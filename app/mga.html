@@ -1,0 +1,262 @@
+<!DOCTYPE HTML>
+<html lang="en">
+  <head>
+		<title>hand of god</title>
+		<meta charset="utf-8">
+		<link rel="stylesheet" href="/css/styles.css">
+		<script src="scripts/third-party/leap.min.js"></script>
+  </head>
+<body onload="init();">
+
+  <div id="container"></div>
+
+<!-- 
+  <script type="text/javascript" src="scripts/third-party/three.js"></script>
+-->
+  <script type="text/javascript" src="scripts/third-party/Three/ThreeWebGL.js"></script>
+  <script type="text/javascript" src="scripts/third-party/Three/ThreeExtras.js"></script>
+  <script type="text/javascript" src="scripts/third-party/Three/RequestAnimationFrame.js"></script>
+  <script type="text/javascript" src="scripts/third-party/Three/Detector.js"></script>
+  <script type="text/javascript" src="scripts/third-party/Tween.js"></script>
+  <script type="text/javascript" src="scripts/globe.js"></script>
+  <script type="text/javascript">
+
+if(!Detector.webgl){
+	Detector.addGetWebGLMessage();
+} else {
+
+	var years = ['1990','1995','2000'];
+	var container = document.getElementById('container');
+	var globe = new DAT.Globe(container);
+
+	console.log(globe);
+	var i, tweens = [];
+	
+	var settime = function(globe, t) {
+		return function() {
+			new TWEEN.Tween(globe).to({time: t/years.length},500).easing(TWEEN.Easing.Cubic.EaseOut).start();
+		};
+	};
+      
+	var xhr;
+	TWEEN.start();
+	globe.animate();
+	// xhr = new XMLHttpRequest();
+	// xhr.open('GET', '/population909500.json', true);
+	// xhr.onreadystatechange = function(e) {
+	//   if (xhr.readyState === 4) {
+	//     if (xhr.status === 200) {
+	//       var data = JSON.parse(xhr.responseText);
+	//       window.data = data;
+	//       for (i=0;i<data.length;i++) {
+	//         globe.addData(data[i][1], {format: 'magnitude', name: data[i][0], animated: true});
+	//       }
+	//       globe.createPoints();
+	//       settime(globe,0)();
+	//       globe.animate();
+	//     }
+	//   }
+	// };
+	// xhr.send(null);
+}
+
+// ANIMATION
+
+// shim layer with setTimeout fallback
+window.requestAnimFrame = (function(){
+  return  window.requestAnimationFrame       ||
+	window.webkitRequestAnimationFrame ||
+	window.mozRequestAnimationFrame    ||
+	window.oRequestAnimationFrame      ||
+	window.msRequestAnimationFrame     ||
+	function( callback ){
+	window.setTimeout(callback, 1000 / 60);
+          };
+})();
+
+
+// usage: 
+// instead of setInterval(render, 16) ....
+
+var inited = false;
+var mouseX, mouseY;
+var originX = window.innerWidth * .5;
+var originY = window.innerHeight * .5;
+var centerHoleSize = 40;
+
+(function animloop(){
+	requestAnimFrame(animloop);
+	render();
+})();
+
+function render() {
+	// if (!inited) {
+	// 	inited = true;
+	// 	console.log(globe);
+	// }
+	// // console.log("mouseX", mouseX, "windowWidth", window.innerWidth);
+	// mouseX = mouseX || 0;
+	// mouseY = mouseY || 0;
+	
+	// var deltaX = (mouseX - originX), deltaY = (mouseY - originY);
+
+	// deltaX = Math.abs(deltaX) < centerHoleSize ? 0 : deltaX;
+	// deltaY = Math.abs(deltaY) < centerHoleSize ? 0 : deltaY;
+
+	// var positionVector = {
+	// 		x: deltaX * .75,
+	// 		y: -deltaY * .75
+	// }
+	// globe.setRotation(positionVector);
+}
+
+document.onmousemove = function(e) {
+	mouseX = e.pageX;
+	mouseY = e.pageY;
+	// do what you want with x and y
+};
+
+// LEAP
+
+var count = 0;
+var minHandDist = 90, maxHandDist = 300;
+var globeMinZoom = 350, globeMaxZoom = 800;
+var selectDist = 110;
+
+var dotArray = [];
+
+var hSpeed = 2;
+var vSpeed = 1.5;
+      
+// globe.addSpherePoint(4.583333, -74.066667, 10);
+// globe.addSpherePoint(40.67, -73.94, 5);
+
+function drawTweet(data) {
+	dotArray.push( globe.addSpherePoint(40.67, -73.94, 5) );
+	console.log(dotArray);
+}
+
+Leap.loop(function(frame) {
+	count++;
+	if (frame.hands.length > 0) {
+		
+		var godHand = frame.hands[0];
+		var handPos = new THREE.Vector3(godHand.sphereCenter[0],godHand.sphereCenter[1],godHand.sphereCenter[2]);
+		var handX = godHand.sphereCenter[0],
+			handY = godHand.sphereCenter[2];
+		
+		// scale of globe
+		var d = handPos.distanceTo( new THREE.Vector3(0,0,0) );
+		var deltaH = maxHandDist - minHandDist;
+		var deltaZ = globeMaxZoom - globeMinZoom;
+		
+		d = d - minHandDist;
+		
+		if (d < 0) d = 0;
+		
+		d = globeMinZoom + ( (d * deltaZ) / deltaH );
+		
+		globe.setDistance(d);
+
+		// rotation of globe
+		var deltaX = Math.abs(handX) < centerHoleSize ? 0 : handX;
+		var deltaY = Math.abs(handY) < centerHoleSize ? 0 : handY;
+
+		var positionVector = {
+				x: deltaX * hSpeed,
+				y: -deltaY * vSpeed
+		}
+		globe.setRotation(positionVector);
+		
+		var selectedTweet = undefined;
+		var closest = 100000;
+		var d = 100000;
+		var currentDot;
+
+		var baseMaterial = new THREE.MeshBasicMaterial({
+			color: 0xdddddd,
+			shading: THREE.FlatShading
+			// vertexColors: THREE.FaceColors
+		});
+
+		var hoverMaterial = new THREE.MeshBasicMaterial({
+			color: 0xdd0000,
+			shading: THREE.FlatShading
+			// vertexColors: THREE.FaceColors
+		});
+
+		if (dotArray.length == 0 ) {
+			drawTweet(undefined);
+		} else {
+			var l = dotArray.length;
+			// there's tweets
+			for ( var i=0; i<l; ++i ) {
+				// find first nearest tweet and stop
+				currentDot = dotArray[i];
+				d = currentDot.position.distanceTo( handPos );
+				if (d < selectDist && d < closest) {
+					closest = d;
+					selectedTweet = currentDot;
+				} else {
+					currentDot.materials = [baseMaterial];
+				}
+			}
+			if (selectedTweet != undefined) {
+				selectedTweet.materials = [hoverMaterial];
+			}
+		}
+
+		if (count%60==0) {
+			console.log(frame, dotArray);
+			if (dotArray.length) {
+				console.log( dotArray[0].position.distanceTo( handPos ) );
+			}
+			// console.log("globe zoom: ", d, handX, handY);
+		}
+	}
+});
+
+
+// var ws;
+
+// // Support both the WebSocket and MozWebSocket objects
+// if ((typeof(WebSocket) == 'undefined') &&
+// 	(typeof(MozWebSocket) != 'undefined')) {
+// WebSocket = MozWebSocket;
+// }
+
+// // Create the socket with event handlers
+// function init() {
+// //Create and open the socket
+// ws = new WebSocket("ws://localhost:6437/");
+  
+// // On successful connection
+// ws.onopen = function(event) {
+// 	document.getElementById("main").style.visibility = "visible";
+// 	document.getElementById("connection").innerHTML = "WebSocket connection open!";
+// };
+  
+// // On message received
+// ws.onmessage = function(event) {
+// 	var obj = JSON.parse(event.data);
+// 	var str = JSON.stringify(obj, undefined, 2);
+// 	document.getElementById("output").innerHTML = '<pre>' + str + '</pre>';
+// };
+  
+// // On socket close
+// ws.onclose = function(event) {
+// 	ws = null;
+// 	document.getElementById("main").style.visibility = "hidden";
+// 	document.getElementById("connection").innerHTML = "WebSocket connection closed";
+// }
+  
+// //On socket error
+// ws.onerror = function(event) {
+// 	alert("Received error");
+// };
+// }
+</script>
+
+  </body>
+
+</html>
