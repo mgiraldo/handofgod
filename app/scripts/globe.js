@@ -69,7 +69,7 @@ DAT.Globe = function(container, colorFn) {
 	var camera, scene, sceneAtmosphere, renderer, w, h;
 	var vector, mesh, atmosphere, point;
 
-	var godSprite, thoughtSprite, godParticle, particles, selectedParticles, thoughtParticles = [], tweetLife = 10;
+	var godSprite, thoughtSprite, godParticle, particles, selectedParticles, thoughtParticles = [], tweetLife = 30;
 
 	var thoughtLimit = 10000, currentThought = 0;
 
@@ -91,9 +91,8 @@ DAT.Globe = function(container, colorFn) {
 	var padding = 40;
 	var PI_HALF = Math.PI / 2;
 
-	var clock;
-
-	var timeToSelect = 3;
+	var clock, hasHand = false;
+	var nearestLine;
 
 	function init() {
 		thoughtSprite = THREE.ImageUtils.loadTexture( "/images/thoughtparticle.png" );
@@ -223,6 +222,23 @@ DAT.Globe = function(container, colorFn) {
 		}, false);
 
 		initParticleSystem();
+
+		var lineMat = new THREE.LineBasicMaterial( { color: 0xff0000, opacity: 1, linewidth: 3 } );
+
+		var lineGeometry = new THREE.Geometry();
+		var from = new THREE.Vertex(
+					new THREE.Vector3(0,0,0)
+				);
+		var to = new THREE.Vertex(
+					new THREE.Vector3(1000,1000,0)
+				);
+
+		lineGeometry.vertices.push(from);
+		lineGeometry.vertices.push(to);
+
+		nearestLine = new THREE.Line(lineGeometry, lineMat);
+
+		// scene.addChild(nearestLine);
 	}
 
 	addData = function(data, opts) {
@@ -337,22 +353,41 @@ DAT.Globe = function(container, colorFn) {
 		if (tweet.geo != null) {
 			if (thoughtParticles.length < thoughtLimit) {
 				thoughtParticles.push( {birth:clock.getElapsedTime(), data:tweet, particle: updateParticleLatLon(particles, currentThought, tweet.geo.coordinates[0], tweet.geo.coordinates[1])} );
-				currentThought++;
 				// console.log(tweet);
 			} else {
 				var dyingThought = thoughtParticles.shift();
 				// console.log("killed:", dyingThought);
 				scene.removeObject( dyingThought );
+				thoughtParticles.push( {birth:clock.getElapsedTime(), data:tweet, particle: updateParticleLatLon(particles, currentThought, tweet.geo.coordinates[0], tweet.geo.coordinates[1])} );
 			}
+			currentThought++;
+		}
+	}
+
+	function cleanTweets() {
+		// kill particles
+		var i,l = thoughtParticles.length, t;
+		selectedParticles.vertices[0].position = new THREE.Vector3(0,0,0);
+		for (i=l-1;i>=0;--i) {
+			t = thoughtParticles[i];
+			if (clock.getElapsedTime() - t.birth > tweetLife) {
+				// console.log("kill",t);
+				t.particle.position = new THREE.Vector3(0,0,0);
+				thoughtParticles.splice(i, 1);
+			}
+		}
+		if (hasHand && nearest) {
+			updateParticleLatLon(selectedParticles, 0, nearest.data.geo.coordinates[0], nearest.data.geo.coordinates[1]);
 		}
 	}
 
 	findNearestTweet = function () {
 		var i,l = thoughtParticles.length, t, newNear, lowest = 100000, d;
+
 		if (l>0) {
 			for (i=0;i<l;++i) {
 				t = thoughtParticles[i];
-				d = t.particle.alpha = 1;
+				// t.particle.alpha = 1;
 				d = t.particle.position.distanceTo( camera.position );
 				// if (t.particle.material!=tweetMaterial) {
 				// 	t.particle.material = tweetMaterial;
@@ -366,22 +401,23 @@ DAT.Globe = function(container, colorFn) {
 			// newNear.particle.material = tweetSelectedMaterial;
 			if (nearest != newNear) {
 				nearest = newNear;
-				// console.log("clock:", clock.getElapsedTime(), nearest.data);
+				// console.log("clock:", clock.getElapsedTime(), nearest);
 			}
-			updateParticleLatLon(selectedParticles, 0, nearest.data.geo.coordinates[0], nearest.data.geo.coordinates[1]);
-			nearest.particle.alpha = 0;
-
-			$("#tweet").html("<span>@" + nearest.data.user.screen_name + "</span>:" + nearest.data.text);
-			// kill particles
-			for (i=l-1;i>=0;--i) {
-				t = thoughtParticles[i];
-				if (clock.getElapsedTime() - t.birth > tweetLife) {
-					// scene.removeObject( thoughtParticles[i].particle );
-					t.particle.position = new THREE.Vector3(0,0,0);
-					thoughtParticles.splice(i, 1);
-				}
-			}
+			// nearest.particle.alpha = 0;
 		}
+
+		// if (nearest) {
+		// 	nearestLine.geometry.vertices[0] = new THREE.Vertex(
+		// 				0,0,0
+		// 			);
+		// 	nearestLine.geometry.vertices[1] = new THREE.Vertex(
+		// 				nearest.particle.position
+		// 			);
+		// }
+
+		// if (Math.random()<0.001) console.log(nearestLine);
+
+		return nearest;
 	}
 
 	updateParticleLatLon = function(p, index, lat, lng) {
@@ -435,53 +471,8 @@ DAT.Globe = function(container, colorFn) {
 		// GeometryUtils.merge(subgeo, point);
 	};
 
-	addHand = function( position ) {
-		godSprite = THREE.ImageUtils.loadTexture( "images/godparticle.png" );
-
-		// var geometry;
-		// var material;
-
-		// material = new THREE.ParticleBasicMaterial({ color: 0xff0000, map:godSprite, vertexColors:true, opacity: 0.25 });
-		// material.color.setHSV( 1.0, 0.2, 0.8 );
-
-		// godParticle = new THREE.Particle( material );
-		// // godParticle.sortParticles = true;
-
-		// scene.addObject( godParticle );
-
-		// console.log( "godParticle", godParticle );
-
-		var geometry = new THREE.Sphere(10, 40, 30);
-
-		var material;
-
-		material = new THREE.MeshBasicMaterial({
-				color: 0xdddd00,
-				shading: THREE.FlatShading,
-				// map: godSprite,
-				// vertexColors: true
-			});
-
-		godParticle = new THREE.Mesh(geometry, material);
-
-		godParticle.position = position;
-
-		godParticle.updateMatrix();
-
-		scene.addObject( godParticle );
-
-		return godParticle;
-	};
-
-	removeHand = function(hand) {
-		if (hand) scene.removeObject(hand);
-	}
-
-	updateHand = function(position) {
-		// console.log("updateHand", position, godParticle);
-		// if (godParticle && position) {
-		// 	godParticle.position = position.multiply( camera.position.negate() );
-		// }
+	setHand = function(hand) {
+		hasHand = hand;
 	}
 
 	function createPoints() {
@@ -642,7 +633,10 @@ DAT.Globe = function(container, colorFn) {
 	};
 
 	function render() {
+		cleanTweets();
+		
 		setRotation({x:0,y:0});
+
 		zoom(curZoomSpeed);
 
 		rotation.x += (target.x - rotation.x) * 0.1;
@@ -712,9 +706,7 @@ DAT.Globe = function(container, colorFn) {
 	this.setDistance = setDistance;
 	this.addTweet = addTweet;
 	this.findNearestTweet = findNearestTweet;
-	this.addHand = addHand;
-	this.updateHand = updateHand;
-	this.removeHand = removeHand;
+	this.setHand = setHand;
 
 	return this;
 
