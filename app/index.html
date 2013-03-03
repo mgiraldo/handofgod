@@ -16,6 +16,8 @@
 		<!-- endbuild -->
 	</head>
 	<body>
+		<div id="nogod">there is no god</div>
+		<div id="title">follow @the_handofgod</div>
 		<div id="tweetbox">
 			<div id="tweet"></div>
 			<div id="actions">
@@ -26,7 +28,7 @@
 					</li>
 					<li id="nothing">
 						<div aria-hidden="true" data-icon="/"></div>
-						MEH!
+						IGNORE
 					</li>
 					<li id="punish">
 						<div aria-hidden="true" data-icon="W"></div>
@@ -109,7 +111,7 @@ var inited = false;
 var mouseX, mouseY;
 var originX = window.innerWidth * .5;
 var originY = window.innerHeight * .5;
-var centerHoleSize = 40;
+var centerHoleSize = 50;
 var controlledByMouse = false;
 var clock;
 
@@ -134,7 +136,11 @@ var mode = 'browse', hasHand = false;
 
 var controller = new Leap.Controller({enableGestures:true});
 
-var currentAction = 0, actionChangeTime = .3, lastMove = 0, lastActionChange = 0, actionApplyTime = 4;
+var currentAction = 0, actionChangeTime = .6, lastMove = 0, lastActionChange = 0, actionApplyTime = 4;
+
+var listenObject;
+
+var lastRepliedTo;
 
 function init () {
 	clock = new THREE.Clock();
@@ -149,11 +155,13 @@ document.onmousemove = function(e) {
 };
 
 function updateInterface() {
+	$("#nogod").addClass('visible');
 	$("#tweetbox").removeClass('visible');
 	// $("#tweet").html("");
 
 	if (hasHand) {
 		$("#tweetbox").addClass('visible');
+		$("#nogod").removeClass('visible');
 		if (nearest != undefined) {
 			$("#tweet").html("<span>@" + nearest.data.user.screen_name + "</span>:" + nearest.data.text);
 		}
@@ -200,10 +208,57 @@ function highlightAction() {
 			item.addClass("selected");
 			if (i!=0) {
 				item.addClass("glow");
+				listenObject = document.getElementById(item.attr("id"));
+				listenObject.addEventListener("webkitAnimationEnd", replyTweet,false);
+				listenObject.addEventListener("animationend", replyTweet,false);
+				listenObject.addEventListener("oanimationend", replyTweet,false);
 			}
 		}
 	}
 	resetActionTimer();
+}
+
+function replyTweet() {
+	if (nearest==undefined) return;
+	// console.log(nearest);
+	if (lastRepliedTo!=nearest.data.user.screen_name) {
+		lastRepliedTo = nearest.data.user.screen_name;
+		var msg;
+
+		switch (currentAction) {
+			case 1:
+				msg = "you have been IGNORED by the hand of god!";
+				break
+			case 2:
+				msg = "you have been PUNISHED by the hand of god!";
+				break
+			case 3:
+				msg = "you have been REWARDED by the hand of god!";
+				break
+			case 4:
+				msg = "you have been sent to HELL by the hand of god!";
+				break
+			case 5:
+				msg = "you have been sent to HEAVEN by the hand of god!";
+				break
+
+		}
+		var reply = {
+			status_id: nearest.data.id,
+			username: nearest.data.user.screen_name,
+			message: msg
+		}
+
+		// var reply = {
+		// 	status_id: "307701970167296000",
+		// 	username: "mgiraldo",
+		// 	message: msg
+		// }
+		console.log("sending to:", nearest, msg);
+		// window.socket.emit('tweet',reply);
+	}
+	currentAction = 0;
+	highlightAction();
 }
 
 function checkActionApply() {
@@ -221,7 +276,7 @@ function isPointing(theta) {
 	var now = clock.getElapsedTime();
 	if (now - lastMove > actionChangeTime) {
 		lastMove = now;
-		if (theta > 0 && theta < 70) {
+		if (theta > 0 && theta < 80) {
 			nextAction();
 		} else if (theta < 180 && theta > 100) {
 			prevAction();
@@ -246,7 +301,7 @@ controller.loop(function(frame) {
 	if (frame.hands.length > 0) {
 		var theta, dd, i, fs, fd, l=frame.fingers.length;
 
-		fs = frame.fingers;
+		fs = frame.hands[0].fingers;
 		dd = new THREE.Vector3(0,0,0);
 
 		for (i=0;i<l;++i) {
@@ -289,7 +344,6 @@ controller.loop(function(frame) {
 			}
 			globe.setRotation(positionVector);
 			
-			var selectedTweet = undefined;
 			var closest = 100000;
 			var d = 100000;
 			var currentDot;
