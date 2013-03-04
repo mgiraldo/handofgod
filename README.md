@@ -4,6 +4,10 @@
 
 Code released **as-is**. This is the result of two days of work at the [@arthackday] in 319 Scholes (feb 28-mar 2, 2013) so it is **not** the most stable/proper code ever. The files you're most probably interested in are located in `app/index.html` (I know, I should put the JS in a separate file), `app/scripts/globe.js` and `app/scripts/tweets.coffee`. I might be missing something from these instructions but I'm sure you'll figure it out on your own :)
 
+## What is this?
+
+This interactive artwork tracks tweets from across the globe using religious keywords in english and spanish (i.e. god, evil, love, hate, hell, good, bad, devil, pray), and allows the player (god) to punish or reward people, send them to heaven or hell, based on the content of those tweets.  It's controlled by hand gestures via the LEAP sensor. This project is a commentary on religious beliefs aiming to raise questions about divine agency.
+
 ## Dependencies
 
   * You need a [LEAP Motion sensor]
