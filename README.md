@@ -13,7 +13,7 @@ This interactive artwork tracks tweets from across the globe using religious key
   * You need a [LEAP Motion sensor]
   * [npm] for server libraries `brew install node`
   * It is easier if you install [yeoman] which also installs Grunt and Bower to take care of all the grunt work (see what I did there?) `npm install -g yo grunt-cli bower`
-  * [jedahan]'s [twitter-sample] for integration with Twitter (you need your own credentials which you can [request from them](http://dev.twitter.com))
+  * [jedahan]'s [twitter-sample] for integration with Twitter (you need your own credentials which you can [request from them](http://dev.twitter.com)). You also need to edit the `server.coffee` file there with the keywords you want to use.
 
 ## Installation
 
