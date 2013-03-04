@@ -25,6 +25,9 @@ Code released **as-is**. This is the result of two days of work at the [@arthack
 
   * [319 Scholes] for organizing the [@arthackday]
   * globe code built on top of the [Google Chrome Globe]
+  * Built with (an outdated version of) [THREE.js]
+  * [IcoMoon] for their awesome [icon font creation app]
+  * Some icons taken from [The Noun Project]
 
 [yeoman]: https://yeoman.io
 [twitter-sample]: https://github.com/jedahan/twitter-sample
@@ -33,3 +36,7 @@ Code released **as-is**. This is the result of two days of work at the [@arthack
 [LEAP Motion sensor]: http://leapmotion.com
 [319 Scholes]: http://319scholes.org/
 [jedahan]: https://github.com/jedahan
+[THREE.js]: https://github.com/mrdoob/three.js/
+[IcoMoon]: http://icomoon.io/
+[icon font creation app]: http://icomoon.io/app/
+[The Noun Project]: http://thenounproject.com/
